@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация — Скотч</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #2b323f;
+            color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .register-card {
+            width: 100%;
+            max-width: 380px;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 90px;
+            height: auto;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 35px;
+            color: #ffffff;
+            letter-spacing: -0.5px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: #3b4454;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            color: #f4f4f4;
+            font-size: 15px;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .input-wrapper input:focus {
+            border-color: #5f6d85;
+            background-color: #434d5e;
+            box-shadow: 0 0 0 4px rgba(95, 109, 133, 0.15);
+        }
+
+        .input-wrapper input::placeholder {
+            color: #8a96a7;
+        }
+
+        /* Особые отступы для поля с иконками */
+        .input-wrapper .password-input {
+            padding-left: 44px;
+            padding-right: 44px;
+        }
+
+        .icon-left {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .icon-right {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            opacity: 0.6;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .icon-right:hover {
+            opacity: 1;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: #4f5b70;
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-submit:hover {
+            background: #5f6d85;
+        }
+
+        .btn-submit:active {
+            transform: scale(0.98);
+        }
+
+        .error-box {
+            color: #ff6b6b;
+            margin-top: 20px;
+            font-size: 14px;
+            min-height: 20px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="register-card">
+        <img src="../img/logo.png" alt="Скотч" class="logo">
+        <h2>Вы тут новенький?</h2>
+        
+        <form id="registerForm">
+            <div class="input-wrapper">
+                <input type="text" id="username" placeholder="Логин" required>
+            </div>
+            
+            <div class="input-wrapper">
+                <input type="password" id="password" placeholder="Пароль" required>
+                <img src="../img/icons/eye.png" class="icon-right" id="togglePassword" alt="Показать">
+            </div>
+            
+            <div class="input-wrapper">
+                <input type="email" id="email" placeholder="Почта">
+            </div>
+            
+            <div class="input-wrapper">
+                <input type="tel" id="phone" placeholder="Номер телефона">
+            </div>
+            
+            <button type="submit" class="btn-submit">Создать аккаунт</button>
+        </form>
+
+        <div id="error" class="error-box"></div>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const errorMessage = document.getElementById('error');
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+
+        togglePassword.addEventListener('click', () => {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            
+            if (isPassword) {
+                passwordInput.setAttribute('type', 'text');
+                togglePassword.setAttribute('src', '../img/icons/hide.png');
+                togglePassword.setAttribute('alt', 'Скрыть');
+            } else {
+                passwordInput.setAttribute('type', 'password');
+                togglePassword.setAttribute('src', '../img/icons/eye.png');
+                togglePassword.setAttribute('alt', 'Показать');
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMessage.innerText = '';
+
+            const username = document.getElementById('username').value.trim();
+            const password = passwordInput.value;
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!email && !phone) {
+                errorMessage.innerText = 'Пожалуйста, заполните почту или номер телефона';
+                return;
+            }
+
+            try {
+                const response = await fetch('/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password, email, phone })
+                });
+
+                if (response.ok) {
+                    window.location.href = 'login.html';
+                } else {
+                    const data = await response.text();
+                    errorMessage.innerText = data || 'Не удалось зарегистрироваться';
+                }
+            } catch (err) {
+                errorMessage.innerText = 'Не удалось связаться с сервером';
+            }
+        });
+    </script>
+</body>
+</html>
