@@ -28,3 +28,17 @@ pub async fn register_user(
 
     Ok(row.0)
 }
+
+pub async fn get_user_for_login(
+    pool: &Pool<Postgres>,
+    login_identifier: &str
+) -> Result<(i32, String), sqlx::Error> {
+    let row: (i32, String) = sqlx::query_as(
+        "SELECT id, password_hash FROM users WHERE username = $1 OR email = $1 OR phone = $1"
+    )
+    .bind(login_identifier)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row)
+}

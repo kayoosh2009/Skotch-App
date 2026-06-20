@@ -1,0 +1,2 @@
+White - #f4f4f4
+Black - #2b323f
