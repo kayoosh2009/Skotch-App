@@ -93,3 +93,7 @@ async fn login(
         }
     }
 }
+
+async fn index() -> &'static str {
+    "Scotch API работает. Перейдите на /static/user/register.html"
+}
