@@ -39,7 +39,6 @@ async fn register(
     State(pool): State<Pool<Postgres>>,
     Json(payload): Json<database::RegisterRequest>,
 ) -> impl IntoResponse {
-    // В реальном проекте здесь нужно добавить хэширование пароля (например, через bcrypt или argon2)
     let password_hash = payload.password; 
 
     match database::register_user(
@@ -50,10 +49,24 @@ async fn register(
         &payload.phone
     ).await {
         Ok(_) => (StatusCode::OK, "Регистрация успешна".into_response()),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR, 
-            format!("Ошибка базы данных: {}", e).into_response()
-        ),
+        Err(e) => {
+            // Проверяем, является ли ошибка ошибкой базы данных
+            if let Some(db_err) = e.as_database_error() {
+                // Код 23505 в PostgreSQL означает нарушение уникальности (Unique Violation)
+                if db_err.code() == Some(std::borrow::Cow::Borrowed("23505")) {
+                    return (
+                        StatusCode::BAD_REQUEST, 
+                        "Этот логин, почта или телефон уже зарегистрированы".into_response()
+                    );
+                }
+            }
+            
+            // Для всех остальных непредвиденных ошибок возвращаем 500
+            (
+                StatusCode::INTERNAL_SERVER_ERROR, 
+                "Произошла внутренняя ошибка сервера".into_response()
+            )
+        }
     }
 }
 
