@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Скотч</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #2b323f;
+            color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 380px;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .logo {
+            width: 90px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 35px;
+            color: #ffffff;
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 18px;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: #3b4454;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            color: #f4f4f4;
+            font-size: 15px;
+            outline: none;
+        }
+
+        .input-wrapper input:focus {
+            background-color: #434d5e;
+        }
+
+        .input-wrapper input::placeholder {
+            color: #8a96a7;
+        }
+
+        .icon-right {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            opacity: 0.6;
+            cursor: pointer;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: #4f5b70;
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .btn-submit:hover {
+            background: #5f6d85;
+        }
+
+        .error-box {
+            color: #ff6b6b;
+            margin-top: 20px;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .switch-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #8a96a7;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .switch-link:hover {
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <img src="../img/logo.png" alt="Скотч" class="logo">
+        <h2>Рады видеть снова!</h2>
+        
+        <form id="loginForm">
+            <div class="input-wrapper">
+                <input type="text" id="loginIdentifier" placeholder="Логин, почта или телефон" required>
+            </div>
+            
+            <div class="input-wrapper">
+                <input type="password" id="password" placeholder="Пароль" required>
+                <img src="../img/icons/eye.png" class="icon-right" id="togglePassword" alt="Показать">
+            </div>
+            
+            <button type="submit" class="btn-submit">Войти</button>
+        </form>
+
+        <a href="register.html" class="switch-link">Ещё нет аккаунта? Зарегистрироваться</a>
+        <div id="error" class="error-box"></div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('error');
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+
+        togglePassword.addEventListener('click', () => {
+            const isPassword = passwordInput.getAttribute('type') === 'password';
+            if (isPassword) {
+                passwordInput.setAttribute('type', 'text');
+                togglePassword.setAttribute('src', '../img/icons/hide.png');
+            } else {
+                passwordInput.setAttribute('type', 'password');
+                togglePassword.setAttribute('src', '../img/icons/eye.png');
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMessage.innerText = '';
+
+            const loginIdentifier = document.getElementById('loginIdentifier').value.trim();
+            const password = passwordInput.value;
+
+            try {
+                const response = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login_identifier: loginIdentifier, password })
+                });
+
+                if (response.ok) {
+                    window.location.href = '/';
+                } else {
+                    const data = await response.text();
+                    errorMessage.innerText = data || 'Неверный логин или пароль';
+                }
+            } catch (err) {
+                errorMessage.innerText = 'Не удалось связаться с сервером';
+            }
+        });
+    </script>
+</body>
+</html>
