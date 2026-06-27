@@ -50,3 +50,9 @@ pub struct RegisterRequest {
     pub email: String,
     pub phone: String,
 }
+
+#[derive(serde::Deserialize)]
+pub struct LoginRequest {
+    pub login_identifier: String,
+    pub password: String,
+}

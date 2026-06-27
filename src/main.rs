@@ -20,9 +20,8 @@ async fn main() {
 
     let app = Router::new()
         .route("/", get(index))
-        // Добавляем роут POST-запроса для регистрации
         .route("/auth/register", post(register))
-        // Отдаем статические файлы
+        .route("/auth/login", post(login))
         .nest_service("/static", ServeDir::new("static"))
         // Передаем пул базы данных как состояние для всего роутера
         .with_state(pool);
@@ -70,6 +69,27 @@ async fn register(
     }
 }
 
-async fn index() -> &'static str {
-    "Scotch API работает. Перейдите на /static/user/register.html"
+async fn login(
+    State(pool): State<Pool<Postgres>>,
+    Json(payload): Json<database::LoginRequest>,
+) -> impl IntoResponse {
+    match database::get_user_for_login(&pool, &payload.login_identifier).await {
+        Ok((_user_id, password_hash)) => {
+            // Так как хэширование пока не подключено, сравниваем пароли напрямую
+            if payload.password == password_hash {
+                (StatusCode::OK, "Вход успешен".into_response())
+            } else {
+                (StatusCode::UNAUTHORIZED, "Неверный логин или пароль".into_response())
+            }
+        }
+        Err(sqlx::Error::RowNotFound) => {
+            (StatusCode::UNAUTHORIZED, "Неверный логин или пароль".into_response())
+        }
+        Err(e) => {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Ошибка базы данных: {}", e).into_response(),
+            )
+        }
+    }
 }
