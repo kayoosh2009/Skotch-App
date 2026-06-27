@@ -42,3 +42,11 @@ pub async fn get_user_for_login(
 
     Ok(row)
 }
+
+#[derive(serde::Deserialize)]
+pub struct RegisterRequest {
+    pub username: String,
+    pub password: String,
+    pub email: String,
+    pub phone: String,
+}

@@ -12,8 +12,6 @@ use sqlx::{Pool, Postgres};
 
 mod database;
 
-mod database;
-
 #[derive(serde::Deserialize)]
 pub struct RegisterRequest {
     pub username: String,
