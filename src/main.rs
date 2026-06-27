@@ -12,18 +12,10 @@ use sqlx::{Pool, Postgres};
 
 mod database;
 
-#[derive(serde::Deserialize)]
-pub struct RegisterRequest {
-    pub username: String,
-    pub password: String, // Фронтенд шлет чистый пароль, хэшировать будем в хендлере
-    pub email: String,
-    pub phone: String,
-}
-
 #[tokio::main]
 async fn main() {
-    // Раскомментируем подключение к БД (укажи свои реальные данные)
-    let database_url = "postgres://username:password@localhost/scotch_db";
+    // Используем явную авторизацию по логину и паролю
+    let database_url = "postgres://localhost/scotch_db";
     let pool = database::init_db(database_url).await;
 
     let app = Router::new()
