@@ -1,1 +1,276 @@
-Страница в разработке
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Скотч — Лента</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #2b323f;
+            color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Контейнер ленты с вертикальным скроллом */
+        .feed-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            overflow_y: scroll;
+            snap-type: y mandatory;
+            scrollbar-width: none; /* Скрываем скроллбар в Firefox */
+        }
+
+        .feed-container::-webkit-scrollbar {
+            display: none; /* Скрываем скроллбар в Chrome/Safari */
+        }
+
+        /* Каждый отдельный ролик */
+        .video-card {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            snap-align: start;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Заполняем область плеера в формате 9:16 */
+        }
+
+        /* Боковая панель действий справа снизу */
+        .side-actions {
+            position: absolute;
+            right: 15px;
+            bottom: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .action-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .action-item:active {
+            transform: scale(0.9);
+        }
+
+        /* Круглая аватарка автора */
+        .author-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: 2px solid #f4f4f4;
+            background-color: #4f5b70;
+            object-fit: cover;
+            margin-bottom: 5px;
+        }
+
+        .action-icon {
+            width: 36px;
+            height: 36px;
+            opacity: 0.9;
+        }
+
+        .action-count {
+            font-size: 13px;
+            margin-top: 4px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        }
+
+        /* Информация о видео снизу */
+        .video-info {
+            position: absolute;
+            left: 15px;
+            bottom: 30px;
+            right: 80px;
+            z-index: 10;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+        }
+
+        .video-author {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .video-title {
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 5px;
+        }
+
+        .video-hashtags {
+            color: #8a96a7;
+            font-size: 14px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="feed-container" id="feed">
+        </div>
+    
+    <script>
+    const feed = document.getElementById('feed');
+
+    // Функция для отрисовки пустого состояния
+    function renderEmptyFeed() {
+        feed.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-size: 18px; color: #8a96a7;">
+                (っ°Д °)っ На данный момент роликов не найдено
+            </div>
+        `;
+    }
+
+    // Загрузка видео с бэкенда
+    async function loadFeed() {
+        try {
+            const response = await fetch('/api/videos');
+            if (!response.ok) throw new Error();
+            
+            const videos = await response.json();
+            
+            if (videos.length === 0) {
+                renderEmptyFeed();
+                return;
+            }
+
+            let htmlContent = '';
+            let videoCounter = 0;
+
+            videos.forEach((video) => {
+                videoCounter++;
+                
+                // Рендерим карточку ролика
+                htmlContent += `
+                    <div class="video-card">
+                        <video src="${video.video_url}" loop muted playsinline></video>
+                        
+                        <div class="side-actions">
+                            <div class="action-item" onclick="window.location.href='/static/user/profile.html?id=${video.user_id}'">
+                                <img src="../img/default-avatar.png" class="author-avatar" alt="Аватар">
+                            </div>
+                            <div class="action-item" onclick="handleLike()">
+                                <img src="../img/icons/like.png" class="action-icon" alt="Лайк">
+                                <span class="action-count">0</span>
+                            </div>
+                            <div class="action-item" onclick="openComments(${video.id})">
+                                <img src="../img/icons/comment.png" class="action-icon" alt="Комменты">
+                                <span class="action-count">0</span>
+                            </div>
+                            <div class="action-item" onclick="handleRepost(${video.id})">
+                                <img src="../img/icons/repost.png" class="action-icon" alt="Репост">
+                            </div>
+                            <div class="action-item" onclick="openMoreMenu(${video.id})">
+                                <img src="../img/icons/more.png" class="action-icon" alt="Еще">
+                            </div>
+                        </div>
+
+                        <div class="video-info">
+                            <div class="video-author">@${video.author_username}</div>
+                            <div class="video-title">${video.title}</div>
+                            <div class="video-hashtags">${video.hashtags ? video.hashtags.map(h => '#' + h).join(' ') : ''}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Каждые 13 видео вставляем рекламный баннер
+                if (videoCounter % 13 === 0) {
+                    htmlContent += `
+                        <div class="video-card ad-card" data-is-ad="true">
+                            <div style="text-align: center; padding: 20px;">
+                                <p style="font-size: 14px; color: #8a96a7; margin-bottom: 20px;">Небольшой перерыв ☕</p>
+                                <div style="width: 300px; height: 250px; background: #3b4454; border-radius: 12px; display: flex; justify-content: center; align-items: center; border: 2px dashed #4f5b70;">
+                                    <span style="font-weight: bold; color: #ffffff;">Рекламный баннер</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            feed.innerHTML = htmlContent;
+            initIntersectionObserver();
+
+        } catch (err) {
+            renderEmptyFeed();
+        }
+    }
+
+    // Функции-заглушки для интерактивных кнопок
+    function handleLike() {
+        // Проверяем, авторизован ли (в будущем заведем полноценную проверку)
+        const isAuthorized = false; 
+        if (!isAuthorized) {
+            window.location.href = '/static/user/login.html';
+        }
+    }
+
+    function openComments(videoId) { alert('Тут будут комментарии для видео ' + videoId); }
+    function handleRepost(videoId) { alert('Видео ' + videoId + ' репостнуто!'); }
+    function openMoreMenu(videoId) { alert('Дополнительное меню для видео ' + videoId); }
+
+    // Логика автоматического скролла рекламы через 15 секунд и автовоспроизведения видео
+    function initIntersectionObserver() {
+        let adTimer = null;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Если это видео, запускаем его воспроизведение
+                    const video = entry.target.querySelector('video');
+                    if (video) video.play().catch(() => {});
+
+                    // Если это рекламный баннер, запускаем таймер на 15 секунд
+                    if (entry.target.hasAttribute('data-is-ad')) {
+                        adTimer = setTimeout(() => {
+                            entry.target.nextElementSibling?.scrollIntoView({ behavior: 'smooth' });
+                        }, 15000);
+                    }
+                } else {
+                    // Если ушли со страницы видео, ставим на паузу
+                    const video = entry.target.querySelector('video');
+                    if (video) video.pause();
+
+                    // Если ушли с рекламы, сбрасываем таймер
+                    if (entry.target.hasAttribute('data-is-ad') && adTimer) {
+                        clearTimeout(adTimer);
+                    }
+                }
+            });
+        }, { threshold: 0.6 });
+
+        document.querySelectorAll('.video-card').forEach(card => observer.observe(card));
+    }
+
+    // Запускаем ленту при загрузке страницы
+    loadFeed();
+</script>
+</body>
+</html>
