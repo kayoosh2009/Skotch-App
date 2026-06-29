@@ -11,6 +11,7 @@ use tower_http::services::ServeDir;
 use sqlx::{Pool, Postgres};
 
 mod database;
+mod video;
 
 #[tokio::main]
 async fn main() {
@@ -22,8 +23,8 @@ async fn main() {
         .route("/", get(index))
         .route("/auth/register", post(register))
         .route("/auth/login", post(login))
+        .route("/api/videos/upload", post(video::upload_video))
         .nest_service("/static", ServeDir::new("static"))
-        // Передаем пул базы данных как состояние для всего роутера
         .with_state(pool);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
