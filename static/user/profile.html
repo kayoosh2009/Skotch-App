@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль — Скотч</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #2b323f;
+            color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding-bottom: 70px; /* Отступ снизу для навигационного бара */
+        }
+
+        .profile-container {
+            width: 100%;
+            max-width: 450px;
+            padding: 30px 20px 20px 20px;
+            text-align: center;
+        }
+
+        /* Блок информации о пользователе */
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .profile-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background-color: #4f5b70;
+            object-fit: cover;
+            border: 3px solid #3b4454;
+        }
+
+        .profile-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .profile-username {
+            font-size: 14px;
+            color: #8a96a7;
+            margin-bottom: 12px;
+        }
+
+        .profile-bio {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #e2e8f0;
+            margin-bottom: 25px;
+            padding: 0 10px;
+        }
+
+        /* Переключатель вкладок (Мои видео / Репосты) */
+        .tabs-container {
+            display: flex;
+            border-bottom: 1px solid #3b4454;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #8a96a7;
+            cursor: pointer;
+            text-align: center;
+            transition: color 0.2s;
+        }
+
+        .tab.active {
+            color: #ffffff;
+            border-bottom: 2px solid #ffffff;
+        }
+
+        /* Сетка публикаций (3 в ряд) */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            width: 100%;
+        }
+
+        .grid-item {
+            aspect-ratio: 9 / 16; /* Ролики сохраняют вертикальный формат */
+            background-color: #1a1f29;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 4px;
+        }
+
+        .grid-item video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .empty-grid-message {
+            grid-column: span 3;
+            padding: 40px 0;
+            color: #8a96a7;
+            font-size: 14px;
+        }
+
+        /* Навигационный бар внизу экрана */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 450px;
+            height: 60px;
+            background-color: #222832;
+            border-top: 1px solid #3b4454;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            height: 100%;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .nav-item.active {
+            opacity: 1;
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="profile-container">
+        <div class="avatar-container">
+            <img src="../img/default-avatar.png" id="avatar" class="profile-avatar" alt="Аватар">
+        </div>
+        <div class="profile-name" id="fullName">Имя Пользователя</div>
+        <div class="profile-username" id="username">@username</div>
+        <div class="profile-bio" id="bio">Здесь будет описание твоего профиля. Расскажи миру о себе! ✨</div>
+
+        <div class="tabs-container">
+            <div class="tab active" id="tabMyVideos" onclick="switchTab('my')">Видео</div>
+            <div class="tab" id="tabReposts" onclick="switchTab('reposts')">Репосты</div>
+        </div>
+
+        <div class="video-grid" id="videoGrid">
+            </div>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" onclick="window.location.href='/static/index.html'">
+            <img src="../img/nav/home.png" class="nav-icon" alt="Главная">
+        </div>
+        <div class="nav-item" onclick="alert('Поиск в разработке')">
+            <img src="../img/nav/search.png" class="nav-icon" alt="Поиск">
+        </div>
+        <div class="nav-item" onclick="window.location.href='/static/video_upload.html'">
+            <img src="../img/nav/upload.png" class="nav-icon" alt="Выложить">
+        </div>
+        <div class="nav-item" onclick="alert('Друзья в разработке')">
+            <img src="../img/nav/friends.png" class="nav-icon" alt="Друзья">
+        </div>
+        <div class="nav-item active" onclick="window.location.href='/static/user/profile.html'">
+            <img src="../img/nav/profile.png" class="nav-icon" alt="Аккаунт">
+        </div>
+    </div>
+
+    <script>
+        // Эмуляция проверки авторизации
+        const isAuthorized = false; // Поменяй на true для теста отображения контента
+
+        if (!isAuthorized) {
+            // Если не авторизован — кидаем на страницу входа
+            window.location.href = 'login.html';
+        }
+
+        let currentTab = 'my';
+        const videoGrid = document.getElementById('videoGrid');
+
+        function switchTab(tabType) {
+            currentTab = tabType;
+            document.getElementById('tabMyVideos').classList.toggle('active', tabType === 'my');
+            document.getElementById('tabReposts').classList.toggle('active', tabType === 'reposts');
+            renderGridContent();
+        }
+
+        function renderGridContent() {
+            videoGrid.innerHTML = '';
+            
+            // Временная заглушка проверки наличия видео во вкладке
+            const hasContent = false; 
+
+            if (!hasContent) {
+                videoGrid.innerHTML = `<div class="empty-grid-message">¯\\_(ツ)_/¯ Роликов пока нет</div>`;
+                return;
+            }
+
+            // Логика отрисовки элементов сетки (добавим, когда настроим бэкенд под выдачу видео конкретного юзера)
+        }
+
+        // Первичный рендер сетки
+        renderGridContent();
+    </script>
+</body>
+</html>
