@@ -1,5 +1,9 @@
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
+use argon2::password_hash::{PasswordHasher, SaltString};
+use argon2::Argon2;
+use rand::rngs::OsRng;
+
 
 pub async fn init_db(database_url: &str) -> Pool<Postgres> {
     PgPoolOptions::new()
@@ -12,10 +16,13 @@ pub async fn init_db(database_url: &str) -> Pool<Postgres> {
 pub async fn register_user(
     pool: &Pool<Postgres>, 
     username: &str, 
-    password_hash: &str,
+    password: &str,
     email: &str,
     phone: &str
 ) -> Result<i32, sqlx::Error> {
+    let password_hash = hash_password(password)
+        .map_err(|e| sqlx::Error::Protocol(format!("Ошибка хеширования пароля: {}", e)))?;
+
     let row: (i32,) = sqlx::query_as(
         "INSERT INTO users (username, password_hash, email, phone) VALUES ($1, $2, $3, $4) RETURNING id"
     )
@@ -27,6 +34,13 @@ pub async fn register_user(
     .await?;
 
     Ok(row.0)
+}
+
+fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error> {
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    let hash = argon2.hash_password(password.as_bytes(), &salt)?;
+    Ok(hash.to_string())
 }
 
 pub async fn get_user_for_login(
