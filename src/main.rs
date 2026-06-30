@@ -39,12 +39,10 @@ async fn register(
     State(pool): State<Pool<Postgres>>,
     Json(payload): Json<database::RegisterRequest>,
 ) -> impl IntoResponse {
-    let password_hash = payload.password; 
-
     match database::register_user(
         &pool, 
         &payload.username, 
-        &password_hash, 
+        &payload.password, 
         &payload.email, 
         &payload.phone
     ).await {
@@ -74,14 +72,9 @@ async fn login(
     State(pool): State<Pool<Postgres>>,
     Json(payload): Json<database::LoginRequest>,
 ) -> impl IntoResponse {
-    match database::get_user_for_login(&pool, &payload.login_identifier).await {
-        Ok((_user_id, password_hash)) => {
-            // Так как хэширование пока не подключено, сравниваем пароли напрямую
-            if payload.password == password_hash {
-                (StatusCode::OK, "Вход успешен".into_response())
-            } else {
-                (StatusCode::UNAUTHORIZED, "Неверный логин или пароль".into_response())
-            }
+    match database::check_login(&pool, &payload.login_identifier, &payload.password).await {
+        Ok(_user_id) => {
+            (StatusCode::OK, "Вход успешен".into_response())
         }
         Err(sqlx::Error::RowNotFound) => {
             (StatusCode::UNAUTHORIZED, "Неверный логин или пароль".into_response())
