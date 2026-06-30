@@ -1,6 +1,6 @@
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{Pool, Postgres};
-use argon2::password_hash::{PasswordHasher, SaltString};
+use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
 use rand::rngs::OsRng;
 
@@ -43,10 +43,21 @@ fn hash_password(password: &str) -> Result<String, argon2::password_hash::Error>
     Ok(hash.to_string())
 }
 
-pub async fn get_user_for_login(
+fn verify_password(password: &str, hash: &str) -> bool {
+    let parsed_hash = match PasswordHash::new(hash) {
+        Ok(h) => h,
+        Err(_) => return false,
+    };
+    Argon2::default()
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok()
+}
+
+pub async fn check_login(
     pool: &Pool<Postgres>,
-    login_identifier: &str
-) -> Result<(i32, String), sqlx::Error> {
+    login_identifier: &str,
+    password: &str,
+) -> Result<i32, sqlx::Error> {
     let row: (i32, String) = sqlx::query_as(
         "SELECT id, password_hash FROM users WHERE username = $1 OR email = $1 OR phone = $1"
     )
@@ -54,7 +65,13 @@ pub async fn get_user_for_login(
     .fetch_one(pool)
     .await?;
 
-    Ok(row)
+    let (user_id, password_hash) = row;
+
+    if verify_password(password, &password_hash) {
+        Ok(user_id)
+    } else {
+        Err(sqlx::Error::RowNotFound)
+    }
 }
 
 #[derive(serde::Deserialize)]
