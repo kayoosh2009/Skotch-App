@@ -3,7 +3,7 @@ use sqlx::{Pool, Postgres};
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use argon2::Argon2;
 use rand::rngs::OsRng;
-
+use rand::RngCore;
 
 pub async fn init_db(database_url: &str) -> Pool<Postgres> {
     PgPoolOptions::new()
@@ -86,4 +86,24 @@ pub struct RegisterRequest {
 pub struct LoginRequest {
     pub login_identifier: String,
     pub password: String,
+}
+
+#[derive(serde::Serialize)]
+pub struct LoginResponse {
+    pub token: String,
+    pub user_id: i32,
+}
+
+pub async fn create_session(pool: &Pool<Postgres>, user_id: i32) -> Result<String, sqlx::Error> {
+    let mut bytes = [0u8; 32];
+    OsRng.fill_bytes(&mut bytes);
+    let token = hex::encode(bytes);
+
+    sqlx::query("INSERT INTO sessions (token, user_id) VALUES ($1, $2)")
+        .bind(&token)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+
+    Ok(token)
 }
